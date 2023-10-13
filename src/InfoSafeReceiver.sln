@@ -3,7 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33403.182
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InfoSafeReceiver.API", "InfoSafeReceiver.API\InfoSafeReceiver.API.csproj", "{46825AD2-5420-4574-A48A-5769DF427C09}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InfoSafeReceiver.API", "InfoSafeReceiver.API\InfoSafeReceiver.API.csproj", "{46825AD2-5420-4574-A48A-5769DF427C09}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InfoSafeReceiver.Data", "InfoSafeReceiver.Data\InfoSafeReceiver.Data.csproj", "{E3B261B3-AB24-46BE-BA7A-DB6D518EDB28}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharedKernel", "SharedKernel\SharedKernel.csproj", "{B814E13B-B78E-4F0C-B25C-E8037FC9A860}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InfoSafeReceiver.Application", "InfoSafeReceiver.Application\InfoSafeReceiver.Application.csproj", "{DE93D687-3C91-4D18-9A2A-684E2E873BAB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InfoSafeReceiver.ViewModels", "InfoSafeReceiver.ViewModels\InfoSafeReceiver.ViewModels.csproj", "{9F7C4FBA-5C44-4160-87E8-1293EE74B039}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +23,22 @@ Global
 		{46825AD2-5420-4574-A48A-5769DF427C09}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{46825AD2-5420-4574-A48A-5769DF427C09}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{46825AD2-5420-4574-A48A-5769DF427C09}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3B261B3-AB24-46BE-BA7A-DB6D518EDB28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3B261B3-AB24-46BE-BA7A-DB6D518EDB28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3B261B3-AB24-46BE-BA7A-DB6D518EDB28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3B261B3-AB24-46BE-BA7A-DB6D518EDB28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B814E13B-B78E-4F0C-B25C-E8037FC9A860}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B814E13B-B78E-4F0C-B25C-E8037FC9A860}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B814E13B-B78E-4F0C-B25C-E8037FC9A860}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B814E13B-B78E-4F0C-B25C-E8037FC9A860}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE93D687-3C91-4D18-9A2A-684E2E873BAB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE93D687-3C91-4D18-9A2A-684E2E873BAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE93D687-3C91-4D18-9A2A-684E2E873BAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE93D687-3C91-4D18-9A2A-684E2E873BAB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F7C4FBA-5C44-4160-87E8-1293EE74B039}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F7C4FBA-5C44-4160-87E8-1293EE74B039}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F7C4FBA-5C44-4160-87E8-1293EE74B039}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F7C4FBA-5C44-4160-87E8-1293EE74B039}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
