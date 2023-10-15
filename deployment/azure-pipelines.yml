@@ -4,31 +4,119 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
 trigger:
-- main
+- master
 
-pool:
-  vmImage: 'windows-latest'
+stages:
+- stage: build
+  jobs:
+  - job: build
+    displayName: build
+    pool:
+      vmImage: 'windows-latest'
 
-variables:
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
+    variables:
+      solution: '**/*.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Release'
+      buildParameters.RestoreBuildProjects: '**/*.csproj'
+      buildParameters.TestProjects: '**/*UnitTests/*.csproj'
 
-steps:
-- task: NuGetToolInstaller@1
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: Restore
+      inputs:
+        command: restore
+        projects: $(buildParameters.RestoreBuildProjects)
 
-- task: NuGetCommand@2
-  inputs:
-    restoreSolution: '$(solution)'
+    - task: DotNetCoreCLI@2
+      displayName: Build
+      inputs:
+        projects: $(buildParameters.RestoreBuildProjects)
+        arguments: --configuration $(BuildConfiguration)
 
-- task: VSBuild@1
-  inputs:
-    solution: '$(solution)'
-    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    - task: DotNetCoreCLI@2
+      displayName: Test
+      inputs:
+        command: test
+        publishTestResults: true
+        projects: $(buildParameters.TestProjects)
+        arguments: --configuration $(BuildConfiguration) -p:CollectCoverage=true -p:CoverletOutput=$(Build.SourcesDirectory)\TestResults\XUnit\Coverage\ -p:CoverletOutputFormat=cobertura%2copencover "--collect:\"XPlat Code Coverage\""
 
-- task: VSTest@2
-  inputs:
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    - task: PublishCodeCoverageResults@1
+      displayName: 'Publish code coverage report'
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+
+    - task: DotNetCoreCLI@2
+      displayName: Publish
+      inputs:
+        command: publish
+        publishWebProjects: True
+        projects: $(buildParameters.RestoreBuildProjects)
+        arguments: --configuration $(BuildConfiguration) --output $(build.ArtifactStagingDirectory)
+        zipAfterPublish: True
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Artifact
+      condition: succeededOrFailed()
+      inputs:
+        pathtoPublish: $(build.ArtifactStagingDirectory)
+        targetPath: 'drop'
+
+
+- stage: deploy_to_prod
+  dependsOn: Build
+  condition: and(always(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  jobs:
+    - job: deployToAppService
+      displayName: 'DeployToAppService - Prod'
+      variables:
+      - group: infosafeReceiver-variable-group
+      steps:
+      
+      - task: DownloadBuildArtifacts@1
+        inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'drop'
+          downloadPath: '$(System.DefaultWorkingDirectory)'
+      
+      - task: FileTransform@1
+        inputs:
+          folderPath: '$(System.DefaultWorkingDirectory)/**/*.zip'
+          fileType: 'json'
+          targetFiles: '**/appsettings.Production.json'
+      
+      - task: AzureWebApp@1
+        inputs:
+          azureSubscription: 'AzureSC'
+          appType: 'webApp'
+          appName: 'InfoSafeReceiverApi'
+          package: '$(System.DefaultWorkingDirectory)/**/*.zip'
+          appSettings: '-ASPNETCORE_ENVIRONMENT "Production"'
+          deploymentMethod: 'auto'
+      
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: 'AzureSC'
+          scriptType: 'pscore'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            # API Management service-specific details
+            $APIMServiceName="InfoSafeApim"
+            $ResourceGroupName="infosafe-rg"
+            $DisplayName="InfoSafeReceiver API"
+            $ServiceURL="https://infosafereceiverapi.azurewebsites.net"
+            
+            # API-specific details
+            $APIId="InfoSafeReceiverApi"
+            $APIPath="infosafereceiver"
+            $SpecificationFormat="OpenAPI"
+            $SpecificationURL="https://infosafereceiverapi.azurewebsites.net/swagger/v1/swagger.json"
+            
+            # Import API
+            az apim api import --path $APIPath --resource-group $ResourceGroupName `
+                --service-name $APIMServiceName --api-id $APIId `
+                --display-name $DisplayName --service-url $ServiceURL `
+                --specification-format $SpecificationFormat --specification-url $SpecificationURL
