@@ -1,7 +1,5 @@
 ﻿using InfoSafeReceiver.Application;
-using InfoSafeReceiver.Data.Models;
 using InfoSafeReceiver.ViewModels;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InfoSafeReceiver.API.Controllers
@@ -14,7 +12,7 @@ namespace InfoSafeReceiver.API.Controllers
         private readonly IAppService _appService;
 
         public ContactReceiverController(
-            ILogger<ContactReceiverController> logger, 
+            ILogger<ContactReceiverController> logger,
             IAppService appService)
         {
             _logger = logger;

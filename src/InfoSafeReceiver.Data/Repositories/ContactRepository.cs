@@ -1,13 +1,5 @@
 ﻿using InfoSafeReceiver.Data.Models;
 using InfoSafeReceiver.Data.Repositories.Interfaces;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace InfoSafeReceiver.Data.Repositories
 {

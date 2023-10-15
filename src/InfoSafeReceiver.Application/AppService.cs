@@ -1,11 +1,7 @@
 ﻿using AutoMapper;
-using Azure.Core;
 using InfoSafeReceiver.Data.Models;
 using InfoSafeReceiver.Data.Repositories.Interfaces;
 using InfoSafeReceiver.ViewModels;
-using Microsoft.Extensions.Logging;
-using System.Data;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace InfoSafeReceiver.Application
 {

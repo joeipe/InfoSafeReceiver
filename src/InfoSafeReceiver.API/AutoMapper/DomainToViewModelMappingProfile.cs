@@ -2,7 +2,6 @@
 using InfoSafeReceiver.Data.Models;
 using InfoSafeReceiver.ViewModels;
 using SharedKernel.Extensions;
-using System.Data;
 
 namespace InfoSafeReceiver.API.AutoMapper
 {
