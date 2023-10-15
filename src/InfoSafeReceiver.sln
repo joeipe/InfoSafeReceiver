@@ -9,9 +9,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InfoSafeReceiver.Data", "In
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharedKernel", "SharedKernel\SharedKernel.csproj", "{B814E13B-B78E-4F0C-B25C-E8037FC9A860}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InfoSafeReceiver.Application", "InfoSafeReceiver.Application\InfoSafeReceiver.Application.csproj", "{DE93D687-3C91-4D18-9A2A-684E2E873BAB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InfoSafeReceiver.Application", "InfoSafeReceiver.Application\InfoSafeReceiver.Application.csproj", "{DE93D687-3C91-4D18-9A2A-684E2E873BAB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InfoSafeReceiver.ViewModels", "InfoSafeReceiver.ViewModels\InfoSafeReceiver.ViewModels.csproj", "{9F7C4FBA-5C44-4160-87E8-1293EE74B039}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InfoSafeReceiver.ViewModels", "InfoSafeReceiver.ViewModels\InfoSafeReceiver.ViewModels.csproj", "{9F7C4FBA-5C44-4160-87E8-1293EE74B039}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "deployment", "deployment", "{CC13A79E-3D5E-4B59-9748-E264CF96F97E}"
+	ProjectSection(SolutionItems) = preProject
+		..\deployment\azure-pipelines.yml = ..\deployment\azure-pipelines.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
