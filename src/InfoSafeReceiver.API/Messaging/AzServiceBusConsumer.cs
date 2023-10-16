@@ -7,7 +7,7 @@ namespace InfoSafeReceiver.API.Messaging
     {
         private readonly IConfiguration _configuration;
 
-        private readonly ServiceBusProcessor contactMessageProcessor;
+        private readonly ServiceBusProcessor _contactMessageProcessor;
 
         public AzServiceBusConsumer(
             IConfiguration configuration)
@@ -24,21 +24,21 @@ namespace InfoSafeReceiver.API.Messaging
                 MaxAutoLockRenewalDuration = TimeSpan.FromMinutes(10),
                 //SubQueue = SubQueue.DeadLetter
             };
-            contactMessageProcessor = client.CreateProcessor("contactsavedmessagetopic", "InfoSafeContactSubscription", options);
+            _contactMessageProcessor = client.CreateProcessor("contactsavedmessagetopic", "InfoSafeContactSubscription", options);
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            contactMessageProcessor.ProcessMessageAsync += ProcessContactMessageAsync;
-            contactMessageProcessor.ProcessErrorAsync += ProcessErrorAsync;
+            _contactMessageProcessor.ProcessMessageAsync += ProcessContactMessageAsync;
+            _contactMessageProcessor.ProcessErrorAsync += ProcessErrorAsync;
 
-            await contactMessageProcessor.StartProcessingAsync();
+            await _contactMessageProcessor.StartProcessingAsync();
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            await contactMessageProcessor.StopProcessingAsync();
-            await contactMessageProcessor.CloseAsync();
+            await _contactMessageProcessor.StopProcessingAsync();
+            await _contactMessageProcessor.CloseAsync();
         }
 
         private async Task ProcessContactMessageAsync(ProcessMessageEventArgs args)
