@@ -1,4 +1,5 @@
 using InfoSafeReceiver.API.Configurations;
+using InfoSafeReceiver.API.Messaging;
 using InfoSafeReceiver.Application;
 using InfoSafeReceiver.Data;
 using InfoSafeReceiver.Data.Repositories;
@@ -18,6 +19,7 @@ builder.Services.AddDbContext<InfoSafeReceiverDbContext>(options =>
 builder.Services.AddAutoMapperConfiguration();
 builder.Services.AddScoped<IAppService, AppService>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
+builder.Services.AddHostedService<AzServiceBusConsumer>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
