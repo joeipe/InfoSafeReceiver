@@ -1,5 +1,6 @@
 ﻿using Azure.Messaging.ServiceBus;
 using InfoSafeReceiver.API.Messages;
+using InfoSafeReceiver.API.Services;
 using InfoSafeReceiver.Application;
 using InfoSafeReceiver.ViewModels;
 using RabbitMQ.Client;
@@ -57,19 +58,11 @@ namespace InfoSafeReceiver.API.Messaging
             var body = e.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
             var value = message.OutputObject<ContactMessage>();
-            var vm = new ContactVM
-            {
-                Id = 0,
-                RefId = value.Id,
-                FirstName = value.FirstName,
-                LastName = value.LastName,
-                DoB = value.DoB
-            };
 
             using (var scope = _services.CreateScope())
             {
-                var appService = scope.ServiceProvider.GetRequiredService<IAppService>();
-                Task.FromResult(appService.AddContactAsync(vm));
+                var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
+                Task.FromResult(messagingService.AddContactAsync(value));
             }
         }
     }

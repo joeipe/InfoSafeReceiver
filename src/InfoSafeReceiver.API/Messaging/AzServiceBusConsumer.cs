@@ -1,18 +1,24 @@
 ﻿using Azure.Messaging.ServiceBus;
+using InfoSafeReceiver.API.Messages;
+using InfoSafeReceiver.API.Services;
 using Microsoft.Extensions.Configuration;
+using SharedKernel.Extensions;
 
 namespace InfoSafeReceiver.API.Messaging
 {
     public class AzServiceBusConsumer : IHostedService
     {
         private readonly IConfiguration _configuration;
+        private readonly IServiceScopeFactory _services;
 
         private readonly ServiceBusProcessor _contactMessageProcessor;
 
         public AzServiceBusConsumer(
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IServiceScopeFactory services)
         {
             _configuration = configuration;
+            _services = services;
 
             var serviceBusConnectionString = _configuration.GetConnectionString("AzBusConnectionString");
             var client = new ServiceBusClient(serviceBusConnectionString);
@@ -46,6 +52,13 @@ namespace InfoSafeReceiver.API.Messaging
             try
             {
                 var message = args.Message.Body.ToString();
+
+                var value = message.OutputObject<ContactMessage>();
+                using (var scope = _services.CreateScope())
+                {
+                    var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
+                    await messagingService.AddContactAsync(value);
+                }
 
                 await args.CompleteMessageAsync(args.Message);
             }

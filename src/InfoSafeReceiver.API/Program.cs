@@ -1,5 +1,6 @@
 using InfoSafeReceiver.API.Configurations;
 using InfoSafeReceiver.API.Messaging;
+using InfoSafeReceiver.API.Services;
 using InfoSafeReceiver.Application;
 using InfoSafeReceiver.Data;
 using InfoSafeReceiver.Data.Repositories;
@@ -17,6 +18,7 @@ builder.Services.AddDbContext<InfoSafeReceiverDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DBConnectionString"))
             );
 builder.Services.AddAutoMapperConfiguration();
+builder.Services.AddScoped<MessagingService>();
 builder.Services.AddScoped<IAppService, AppService>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
 if (builder.Environment.IsDevelopment())
