@@ -1,65 +1,76 @@
 ﻿using Azure.Messaging.ServiceBus;
+using InfoSafeReceiver.API.Messages;
+using InfoSafeReceiver.Application;
+using InfoSafeReceiver.ViewModels;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using SharedKernel.Extensions;
 using System.Text;
+using System.Threading.Channels;
 
 namespace InfoSafeReceiver.API.Messaging
 {
     public class RmqServiceBusConsumer : IHostedService
     {
         private readonly IConfiguration _configuration;
+        private readonly IServiceScopeFactory _services;
 
-        private readonly EventingBasicConsumer _consumer;
+        private readonly IConnection _connection;
+        private readonly IModel _channel;
 
         public RmqServiceBusConsumer(
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IServiceScopeFactory services)
         {
             _configuration = configuration;
+            _services = services;
 
             var serviceBusConnectionString = _configuration.GetConnectionString("RMQConnectionString");
             var factory = new ConnectionFactory() { HostName = serviceBusConnectionString };
-            var connection = factory.CreateConnection();
-            var channel = connection.CreateModel();
+            _connection = factory.CreateConnection();
+            _channel = _connection.CreateModel();
 
-            channel.QueueDeclare("BasicTest", false, false, false, null);
-            _consumer = new EventingBasicConsumer(channel);
+            _channel.QueueDeclare("ContactSavedMessageTopic", false, false, false, null);
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
-            await Task.Run(() =>
-            {
-                _consumer.Received += ProcessContactMessageAsync;
-            });
+            var consumer = new EventingBasicConsumer(_channel);
+
+            consumer.Received += ProcessContactMessage;
+
+            _channel.BasicConsume("ContactSavedMessageTopic", true, consumer);
+
+            return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            _channel.Close();
+            _connection.Close();
+
+            return Task.CompletedTask;
         }
 
-        private void ProcessContactMessageAsync(object? sender, BasicDeliverEventArgs e)
+        private void ProcessContactMessage(object? sender, BasicDeliverEventArgs e)
         {
-            var body = e.Body.Span;
+            var body = e.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
+            var value = message.OutputObject<ContactMessage>();
+            var vm = new ContactVM
+            {
+                Id = 0,
+                RefId = value.Id,
+                FirstName = value.FirstName,
+                LastName = value.LastName,
+                DoB = value.DoB
+            };
+
+            using (var scope = _services.CreateScope())
+            {
+                var appService = scope.ServiceProvider.GetRequiredService<IAppService>();
+                Task.FromResult(appService.AddContactAsync(vm));
+            }
         }
-
-        //private async Task ProcessContactMessageAsync(ProcessMessageEventArgs args)
-        //{
-        //    try
-        //    {
-        //        var message = args.Message.Body.ToString();
-
-        //        await args.CompleteMessageAsync(args.Message);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        //Complete, Abandon, Dead-lettter, Defer
-        //        if (args.Message.DeliveryCount > 5)
-        //        {
-        //            await args.DeadLetterMessageAsync(args.Message, ex.Message, ex.ToString());
-        //        }
-        //    }
-        //}
     }
 }
