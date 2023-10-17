@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 
 namespace SharedKernel.Extensions
 {
@@ -22,9 +17,9 @@ namespace SharedKernel.Extensions
 
         public static T OutputObject<T>(this string json)
         {
-            var serializeOptions = new JsonSerializerOptions 
-            { 
-                PropertyNameCaseInsensitive = true 
+            var serializeOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
             };
             var result = JsonSerializer.Deserialize<T>(json, serializeOptions);
             return result;

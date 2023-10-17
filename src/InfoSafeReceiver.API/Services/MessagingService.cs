@@ -1,7 +1,6 @@
 ﻿using InfoSafeReceiver.API.Messages;
 using InfoSafeReceiver.Application;
 using InfoSafeReceiver.ViewModels;
-using Microsoft.AspNetCore.Mvc;
 
 namespace InfoSafeReceiver.API.Services
 {

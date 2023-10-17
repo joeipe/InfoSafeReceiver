@@ -1,13 +1,9 @@
-﻿using Azure.Messaging.ServiceBus;
-using InfoSafeReceiver.API.Messages;
+﻿using InfoSafeReceiver.API.Messages;
 using InfoSafeReceiver.API.Services;
-using InfoSafeReceiver.Application;
-using InfoSafeReceiver.ViewModels;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using SharedKernel.Extensions;
 using System.Text;
-using System.Threading.Channels;
 
 namespace InfoSafeReceiver.API.Messaging
 {
@@ -55,14 +51,21 @@ namespace InfoSafeReceiver.API.Messaging
 
         private void ProcessContactMessage(object? sender, BasicDeliverEventArgs e)
         {
-            var body = e.Body.ToArray();
-            var message = Encoding.UTF8.GetString(body);
-            var value = message.OutputObject<ContactMessage>();
-
-            using (var scope = _services.CreateScope())
+            try
             {
-                var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
-                Task.FromResult(messagingService.AddContactAsync(value));
+                var body = e.Body.ToArray();
+                var message = Encoding.UTF8.GetString(body);
+                var value = message.OutputObject<ContactMessage>();
+
+                using (var scope = _services.CreateScope())
+                {
+                    var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
+                    Task.FromResult(messagingService.AddContactAsync(value));
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
             }
         }
     }

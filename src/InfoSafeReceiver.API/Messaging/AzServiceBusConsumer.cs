@@ -1,7 +1,6 @@
 ﻿using Azure.Messaging.ServiceBus;
 using InfoSafeReceiver.API.Messages;
 using InfoSafeReceiver.API.Services;
-using Microsoft.Extensions.Configuration;
 using SharedKernel.Extensions;
 
 namespace InfoSafeReceiver.API.Messaging
