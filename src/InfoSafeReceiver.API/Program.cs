@@ -1,5 +1,6 @@
 using InfoSafeReceiver.API.Configurations;
 using InfoSafeReceiver.API.Messaging;
+using InfoSafeReceiver.API.Messaging.ExtraForLearning;
 using InfoSafeReceiver.API.Services;
 using InfoSafeReceiver.Application;
 using InfoSafeReceiver.Data;
@@ -23,7 +24,7 @@ builder.Services.AddScoped<IAppService, AppService>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddHostedService<RmqServiceBusConsumer>();
+    builder.Services.AddHostedService<RmqFanOutServiceBusConsumer>();
 }
 else
 {
