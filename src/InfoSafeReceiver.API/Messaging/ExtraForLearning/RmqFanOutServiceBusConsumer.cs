@@ -13,7 +13,7 @@ namespace InfoSafeReceiver.API.Messaging.ExtraForLearning
         private readonly IServiceScopeFactory _services;
 
         private readonly IConnection _connection;
-        private readonly IModel _contactMessageChannel;
+        private readonly IModel _channel;
 
         public RmqFanOutServiceBusConsumer(
             IConfiguration configuration,
@@ -25,25 +25,31 @@ namespace InfoSafeReceiver.API.Messaging.ExtraForLearning
             var serviceBusConnectionString = _configuration.GetConnectionString("RMQConnectionString");
             var factory = new ConnectionFactory() { HostName = serviceBusConnectionString };
             _connection = factory.CreateConnection();
-            _contactMessageChannel = _connection.CreateModel();
+            _channel = _connection.CreateModel();
 
-            _contactMessageChannel.ExchangeDeclare("ContactSavedMessageTopic", ExchangeType.Fanout);
-            _contactMessageChannel.QueueDeclare("InfoSafeContactSubscription", false, false, false, null);
-            _contactMessageChannel.QueueBind("InfoSafeContactSubscription", "ContactSavedMessageTopic", string.Empty);
+            _channel.ExchangeDeclare("ContactSavedMessageTopic_dlx", ExchangeType.Fanout);
+            _channel.QueueDeclare("InfoSafeContactSubscription_dlx", false, false, false, null);
+            _channel.QueueBind("InfoSafeContactSubscription_dlx", "ContactSavedMessageTopic_dlx", string.Empty);
+
+            var args = new Dictionary<string, object>();
+            args.Add("x-dead-letter-exchange", "ContactSavedMessageTopic_dlx");
+            _channel.ExchangeDeclare("ContactSavedMessageTopic", ExchangeType.Fanout);
+            _channel.QueueDeclare("InfoSafeContactSubscription", false, false, false, args);
+            _channel.QueueBind("InfoSafeContactSubscription", "ContactSavedMessageTopic", string.Empty);
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            var contactMessageConsumer = new EventingBasicConsumer(_contactMessageChannel);
+            var contactMessageConsumer = new EventingBasicConsumer(_channel);
             contactMessageConsumer.Received += ProcessContactMessage;
-            _contactMessageChannel.BasicConsume("InfoSafeContactSubscription", true, contactMessageConsumer);
+            _channel.BasicConsume("InfoSafeContactSubscription", false, contactMessageConsumer);
 
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _contactMessageChannel.Close();
+            _channel.Close();
             _connection.Close();
 
             return Task.CompletedTask;
@@ -55,17 +61,19 @@ namespace InfoSafeReceiver.API.Messaging.ExtraForLearning
             {
                 var body = e.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
-                var value = message.OutputObject<ContactMessage>();
 
+                var value = message.OutputObject<ContactMessage>();
                 using (var scope = _services.CreateScope())
                 {
                     var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
                     Task.FromResult(messagingService.AddContactAsync(value));
                 }
+
+                _channel.BasicAck(e.DeliveryTag, false);
             }
             catch (Exception ex)
             {
-                throw;
+                _channel.BasicNack(e.DeliveryTag, false, false);
             }
         }
     }

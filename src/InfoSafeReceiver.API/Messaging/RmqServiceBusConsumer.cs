@@ -13,7 +13,7 @@ namespace InfoSafeReceiver.API.Messaging
         private readonly IServiceScopeFactory _services;
 
         private readonly IConnection _connection;
-        private readonly IModel _contactMessageChannel;
+        private readonly IModel _channel;
 
         public RmqServiceBusConsumer(
             IConfiguration configuration,
@@ -25,23 +25,23 @@ namespace InfoSafeReceiver.API.Messaging
             var serviceBusConnectionString = _configuration.GetConnectionString("RMQConnectionString");
             var factory = new ConnectionFactory() { HostName = serviceBusConnectionString };
             _connection = factory.CreateConnection();
-            _contactMessageChannel = _connection.CreateModel();
+            _channel = _connection.CreateModel();
 
-            _contactMessageChannel.QueueDeclare("ContactSavedMessageTopic", false, false, false, null);
+            _channel.QueueDeclare("ContactSavedMessageTopic", false, false, false, null);
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            var contactMessageConsumer = new EventingBasicConsumer(_contactMessageChannel);
+            var contactMessageConsumer = new EventingBasicConsumer(_channel);
             contactMessageConsumer.Received += ProcessContactMessage;
-            _contactMessageChannel.BasicConsume("ContactSavedMessageTopic", true, contactMessageConsumer);
+            _channel.BasicConsume("ContactSavedMessageTopic", false, contactMessageConsumer);
 
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _contactMessageChannel.Close();
+            _channel.Close();
             _connection.Close();
 
             return Task.CompletedTask;
@@ -53,17 +53,19 @@ namespace InfoSafeReceiver.API.Messaging
             {
                 var body = e.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
-                var value = message.OutputObject<ContactMessage>();
 
+                var value = message.OutputObject<ContactMessage>();
                 using (var scope = _services.CreateScope())
                 {
                     var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
                     Task.FromResult(messagingService.AddContactAsync(value));
                 }
+
+                _channel.BasicAck(e.DeliveryTag, false);
             }
             catch (Exception ex)
             {
-                throw;
+                _channel.BasicNack(e.DeliveryTag, false, false);
             }
         }
     }
