@@ -14,7 +14,7 @@ namespace InfoSafeReceiver.API.Messaging.ExtraForLearning
         private readonly IServiceScopeFactory _services;
 
         private readonly IConnection _connection;
-        private readonly IModel _channel;
+        private readonly IModel _contactMessageChannel;
 
         public RmqFanOutServiceBusConsumer(
             IConfiguration configuration,
@@ -26,27 +26,25 @@ namespace InfoSafeReceiver.API.Messaging.ExtraForLearning
             var serviceBusConnectionString = _configuration.GetConnectionString("RMQConnectionString");
             var factory = new ConnectionFactory() { HostName = serviceBusConnectionString };
             _connection = factory.CreateConnection();
-            _channel = _connection.CreateModel();
+            _contactMessageChannel = _connection.CreateModel();
 
-            _channel.ExchangeDeclare("ContactSavedMessageTopic", ExchangeType.Fanout);
-            _channel.QueueDeclare("InfoSafeContactSubscription", false, false, false, null);
-            _channel.QueueBind("InfoSafeContactSubscription", "ContactSavedMessageTopic", string.Empty);
+            _contactMessageChannel.ExchangeDeclare("ContactSavedMessageTopic", ExchangeType.Fanout);
+            _contactMessageChannel.QueueDeclare("InfoSafeContactSubscription", false, false, false, null);
+            _contactMessageChannel.QueueBind("InfoSafeContactSubscription", "ContactSavedMessageTopic", string.Empty);
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            var consumer = new EventingBasicConsumer(_channel);
-
-            consumer.Received += ProcessContactMessage;
-
-            _channel.BasicConsume("InfoSafeContactSubscription", true, consumer);
+            var contactMessageConsumer = new EventingBasicConsumer(_contactMessageChannel);
+            contactMessageConsumer.Received += ProcessContactMessage;
+            _contactMessageChannel.BasicConsume("InfoSafeContactSubscription", true, contactMessageConsumer);
 
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _channel.Close();
+            _contactMessageChannel.Close();
             _connection.Close();
 
             return Task.CompletedTask;
