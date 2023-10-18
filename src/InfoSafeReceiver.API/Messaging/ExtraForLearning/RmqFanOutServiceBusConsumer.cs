@@ -4,7 +4,6 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using SharedKernel.Extensions;
 using System.Text;
-using System.Threading.Channels;
 
 namespace InfoSafeReceiver.API.Messaging.ExtraForLearning
 {
@@ -49,6 +48,7 @@ namespace InfoSafeReceiver.API.Messaging.ExtraForLearning
 
             return Task.CompletedTask;
         }
+
         private void ProcessContactMessage(object? sender, BasicDeliverEventArgs e)
         {
             try
