@@ -13,7 +13,6 @@ namespace InfoSafeReceiver.API.Messaging.ExtraForLearning
         private readonly IServiceScopeFactory _services;
 
         private readonly IConnection _connection;
-        private readonly IModel _channel;
 
         public RmqFanOutServiceBusConsumer(
             IConfiguration configuration,
@@ -25,56 +24,64 @@ namespace InfoSafeReceiver.API.Messaging.ExtraForLearning
             var serviceBusConnectionString = _configuration.GetConnectionString("RMQConnectionString");
             var factory = new ConnectionFactory() { HostName = serviceBusConnectionString };
             _connection = factory.CreateConnection();
-            _channel = _connection.CreateModel();
-
-            _channel.ExchangeDeclare("ContactSavedMessageTopic_dlx", ExchangeType.Fanout);
-            _channel.QueueDeclare("InfoSafeContactSubscription_dlx", false, false, false, null);
-            _channel.QueueBind("InfoSafeContactSubscription_dlx", "ContactSavedMessageTopic_dlx", string.Empty);
-
-            var args = new Dictionary<string, object>();
-            args.Add("x-dead-letter-exchange", "ContactSavedMessageTopic_dlx");
-            _channel.ExchangeDeclare("ContactSavedMessageTopic", ExchangeType.Fanout);
-            _channel.QueueDeclare("InfoSafeContactSubscription", false, false, false, args);
-            _channel.QueueBind("InfoSafeContactSubscription", "ContactSavedMessageTopic", string.Empty);
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            var contactMessageConsumer = new EventingBasicConsumer(_channel);
-            contactMessageConsumer.Received += ProcessContactMessage;
-            _channel.BasicConsume("InfoSafeContactSubscription", false, contactMessageConsumer);
+            StartBasicConsume("InfoSafeContactSubscription", "ContactSavedMessageTopic", async message =>
+            {
+                var value = message.OutputObject<ContactMessage>();
+                using (var scope = _services.CreateScope())
+                {
+                    var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
+                    await messagingService.AddContactAsync(value);
+                }
+            });
 
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _channel.Close();
             _connection.Close();
 
             return Task.CompletedTask;
         }
 
-        private void ProcessContactMessage(object? sender, BasicDeliverEventArgs e)
+        private void StartBasicConsume(string queue, string exchange, Func<string, Task> handleAsync)
         {
-            try
-            {
-                var body = e.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
+            var channel = _connection.CreateModel();
 
-                var value = message.OutputObject<ContactMessage>();
-                using (var scope = _services.CreateScope())
+            var dlxExchange = $"{exchange}_dlx";
+            var dlxQueue = $"{queue}_dlx";
+            channel.ExchangeDeclare(dlxExchange, ExchangeType.Fanout);
+            channel.QueueDeclare(dlxQueue, false, false, false, null);
+            channel.QueueBind(dlxQueue, dlxExchange, string.Empty);
+
+            var args = new Dictionary<string, object>();
+            args.Add("x-dead-letter-exchange", dlxExchange);
+            channel.ExchangeDeclare(exchange, ExchangeType.Fanout);
+            channel.QueueDeclare(queue, false, false, false, args);
+            channel.QueueBind(queue, exchange, string.Empty);
+
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += (model, ea) =>
+            {
+                try
                 {
-                    var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
-                    Task.FromResult(messagingService.AddContactAsync(value));
-                }
+                    var body = ea.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
 
-                _channel.BasicAck(e.DeliveryTag, false);
-            }
-            catch (Exception ex)
-            {
-                _channel.BasicNack(e.DeliveryTag, false, false);
-            }
+                    handleAsync(message).Wait();
+
+                    channel.BasicAck(ea.DeliveryTag, false);
+                }
+                catch (Exception ex)
+                {
+                    channel.BasicNack(ea.DeliveryTag, false, false);
+                }
+            };
+            channel.BasicConsume(queue, false, consumer);
         }
     }
 }
