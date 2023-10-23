@@ -13,7 +13,6 @@ namespace InfoSafeReceiver.API.Messaging
         private readonly IServiceScopeFactory _services;
 
         private readonly IConnection _connection;
-        private readonly IModel _channel;
 
         public RmqServiceBusConsumer(
             IConfiguration configuration,
@@ -25,48 +24,54 @@ namespace InfoSafeReceiver.API.Messaging
             var serviceBusConnectionString = _configuration.GetConnectionString("RMQConnectionString");
             var factory = new ConnectionFactory() { HostName = serviceBusConnectionString };
             _connection = factory.CreateConnection();
-            _channel = _connection.CreateModel();
-
-            _channel.QueueDeclare("ContactSavedMessageTopic", false, false, false, null);
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            var contactMessageConsumer = new EventingBasicConsumer(_channel);
-            contactMessageConsumer.Received += ProcessContactMessage;
-            _channel.BasicConsume("ContactSavedMessageTopic", false, contactMessageConsumer);
+            StartBasicConsume("InfoSafeContactSubscription", async message =>
+            {
+                var value = message.OutputObject<ContactMessage>();
+                using (var scope = _services.CreateScope())
+                {
+                    var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
+                    await messagingService.AddContactAsync(value);
+                }
+            });
 
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _channel.Close();
             _connection.Close();
 
             return Task.CompletedTask;
         }
 
-        private void ProcessContactMessage(object? sender, BasicDeliverEventArgs e)
+        private void StartBasicConsume(string queue, Func<string, Task> handleAsync)
         {
-            try
-            {
-                var body = e.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
+            var channel = _connection.CreateModel();
 
-                var value = message.OutputObject<ContactMessage>();
-                using (var scope = _services.CreateScope())
+            channel.QueueDeclare(queue, false, false, false, null);
+
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += (model, ea) =>
+            {
+                try
                 {
-                    var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
-                    Task.FromResult(messagingService.AddContactAsync(value));
-                }
+                    var body = ea.Body.ToArray();
+                    var message = Encoding.UTF8.GetString(body);
 
-                _channel.BasicAck(e.DeliveryTag, false);
-            }
-            catch (Exception ex)
-            {
-                _channel.BasicNack(e.DeliveryTag, false, false);
-            }
+                    handleAsync(message).Wait();
+
+                    channel.BasicAck(ea.DeliveryTag, false);
+                }
+                catch (Exception ex)
+                {
+                    channel.BasicNack(ea.DeliveryTag, false, false);
+                }
+            };
+            channel.BasicConsume(queue, false, consumer);
         }
     }
 }
