@@ -2,6 +2,8 @@
 using InfoSafeReceiver.API.Messages;
 using InfoSafeReceiver.API.Services;
 using SharedKernel.Extensions;
+using System.Text;
+using System.Threading.Channels;
 
 namespace InfoSafeReceiver.API.Messaging
 {
@@ -10,7 +12,8 @@ namespace InfoSafeReceiver.API.Messaging
         private readonly IConfiguration _configuration;
         private readonly IServiceScopeFactory _services;
 
-        private readonly ServiceBusProcessor _contactMessageProcessor;
+        private readonly ServiceBusClient _client;
+        private readonly List<IAsyncDisposable> _disposables = new();
 
         public AzServiceBusConsumer(
             IConfiguration configuration,
@@ -20,8 +23,33 @@ namespace InfoSafeReceiver.API.Messaging
             _services = services;
 
             var serviceBusConnectionString = _configuration.GetConnectionString("AzBusConnectionString");
-            var client = new ServiceBusClient(serviceBusConnectionString);
+            _client = new ServiceBusClient(serviceBusConnectionString);
+        }
 
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            await StartBasicConsumeAsync("InfoSafeContactSubscription", "ContactSavedMessageTopic", async message =>
+            {
+                var value = message.OutputObject<ContactMessage>();
+                using (var scope = _services.CreateScope())
+                {
+                    var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
+                    await messagingService.AddContactAsync(value);
+                }
+            });
+        }
+
+        public async Task StopAsync(CancellationToken cancellationToken)
+        {
+            foreach (var disposable in _disposables)
+            {
+                await disposable.DisposeAsync();
+            }
+            await _client.DisposeAsync();
+        }
+
+        private async Task StartBasicConsumeAsync(string subscription, string topic, Func<string, Task> handleAsync)
+        {
             var options = new ServiceBusProcessorOptions()
             {
                 AutoCompleteMessages = false,
@@ -29,51 +57,35 @@ namespace InfoSafeReceiver.API.Messaging
                 MaxAutoLockRenewalDuration = TimeSpan.FromMinutes(10),
                 //SubQueue = SubQueue.DeadLetter
             };
-            _contactMessageProcessor = client.CreateProcessor("contactsavedmessagetopic", "InfoSafeContactSubscription", options);
-        }
+            var processor = _client.CreateProcessor(topic, subscription, options);
+            _disposables.Add(processor);
 
-        public async Task StartAsync(CancellationToken cancellationToken)
-        {
-            _contactMessageProcessor.ProcessMessageAsync += ProcessContactMessageAsync;
-            _contactMessageProcessor.ProcessErrorAsync += ProcessErrorAsync;
-
-            await _contactMessageProcessor.StartProcessingAsync();
-        }
-
-        public async Task StopAsync(CancellationToken cancellationToken)
-        {
-            await _contactMessageProcessor.StopProcessingAsync();
-            await _contactMessageProcessor.CloseAsync();
-        }
-
-        private async Task ProcessContactMessageAsync(ProcessMessageEventArgs args)
-        {
-            try
+            processor.ProcessMessageAsync += async (args) =>
             {
-                var message = args.Message.Body.ToString();
-
-                var value = message.OutputObject<ContactMessage>();
-                using (var scope = _services.CreateScope())
+                try
                 {
-                    var messagingService = scope.ServiceProvider.GetRequiredService<MessagingService>();
-                    await messagingService.AddContactAsync(value);
-                }
+                    var message = args.Message.Body.ToString();
 
-                await args.CompleteMessageAsync(args.Message);
-            }
-            catch (Exception ex)
+                    await handleAsync(message);
+
+                    await args.CompleteMessageAsync(args.Message);
+                }
+                catch (Exception ex)
+                {
+                    //Complete, Abandon, Dead-lettter, Defer
+                    if (args.Message.DeliveryCount > 5)
+                    {
+                        await args.DeadLetterMessageAsync(args.Message, ex.Message, ex.ToString());
+                    }
+                }
+            };
+
+            processor.ProcessErrorAsync += (args) =>
             {
-                //Complete, Abandon, Dead-lettter, Defer
-                if (args.Message.DeliveryCount > 5)
-                {
-                    await args.DeadLetterMessageAsync(args.Message, ex.Message, ex.ToString());
-                }
-            }
-        }
+                return Task.CompletedTask;
+            };
 
-        private async Task ProcessErrorAsync(ProcessErrorEventArgs args)
-        {
-            //throw new NotImplementedException();
+            await processor.StartProcessingAsync();
         }
     }
 }
