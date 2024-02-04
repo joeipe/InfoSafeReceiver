@@ -24,7 +24,7 @@ builder.Services.AddScoped<IAppService, AppService>();
 builder.Services.AddScoped<IContactRepository, ContactRepository>();
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddHostedService<RmqServiceBusConsumer>();
+    builder.Services.AddHostedService<RmqFanOutServiceBusConsumer>();
 }
 else
 {
