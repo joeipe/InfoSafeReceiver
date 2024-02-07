@@ -31,6 +31,8 @@ else
     builder.Services.AddHostedService<AzServiceBusConsumer>();
 }
 
+builder.Services.AddHangfireConfiguration(builder.Configuration);
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -47,6 +49,9 @@ using (var scope = app.Services.CreateScope())
     var dataContext = scope.ServiceProvider.GetRequiredService<InfoSafeReceiverDbContext>();
     dataContext.Database.Migrate();
 }
+
+app.ApplyHangfire();
+app.RegisterHangfireRecurringJobs();
 
 app.UseHttpsRedirection();
 

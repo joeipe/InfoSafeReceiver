@@ -9,5 +9,7 @@ namespace InfoSafeReceiver.Application
         Task<List<ContactVM>> GetContactsByIdAsync(int id);
 
         Task AddContactAsync(ContactVM value);
+
+        Task AddContactDelayedAsync(ContactVM value);
     }
 }

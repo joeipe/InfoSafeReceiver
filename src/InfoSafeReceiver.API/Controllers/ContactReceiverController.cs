@@ -1,4 +1,5 @@
-﻿using InfoSafeReceiver.Application;
+﻿using Hangfire;
+using InfoSafeReceiver.Application;
 using InfoSafeReceiver.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -42,6 +43,18 @@ namespace InfoSafeReceiver.API.Controllers
         public async Task<ActionResult> AddContact([FromBody] ContactVM value)
         {
             await _appService.AddContactAsync(value);
+            return Ok();
+        }
+
+        [HttpPost]
+        public ActionResult AddContactDelayed([FromBody] ContactVM value)
+        {
+            // Fire-and-forget
+            var jobId = BackgroundJob.Enqueue<IAppService>(x => x.AddContactDelayedAsync(value));
+
+            //Delayed
+            //jobId = BackgroundJob.Schedule<IAppService>(x => x.AddContactDelayedAsync(value), TimeSpan.FromMinutes(5));
+
             return Ok();
         }
     }

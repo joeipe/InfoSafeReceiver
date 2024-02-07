@@ -2,8 +2,6 @@
 using InfoSafeReceiver.API.Messages;
 using InfoSafeReceiver.API.Services;
 using SharedKernel.Extensions;
-using System.Text;
-using System.Threading.Channels;
 
 namespace InfoSafeReceiver.API.Messaging
 {

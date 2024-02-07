@@ -38,5 +38,12 @@ namespace InfoSafeReceiver.Application
             _contactRepository.Create(data);
             await _contactRepository.SaveAsync();
         }
+
+        public async Task AddContactDelayedAsync(ContactVM value)
+        {
+            Thread.Sleep((int)TimeSpan.FromSeconds(30).TotalMilliseconds);
+
+            await AddContactAsync(value);
+        }
     }
 }
