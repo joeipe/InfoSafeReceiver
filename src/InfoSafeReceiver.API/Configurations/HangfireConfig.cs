@@ -47,7 +47,7 @@ namespace InfoSafeReceiver.API.Configurations
                 }
             }
 
-            RegisterRecurringJob<AddContactJob>(Cron.Hourly());
+            RegisterRecurringJob<AddContactJob>(Cron.Yearly());
         }
 
         private static void RegisterRecurringJob<T>(string cron) where T : JobBase
