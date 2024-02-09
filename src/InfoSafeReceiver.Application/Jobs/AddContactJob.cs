@@ -39,7 +39,6 @@ namespace InfoSafeReceiver.Application.Jobs
             {
                 _logger.LogError(ex, $"OperationCanceledException Thrown. Error: {ex.Message}");
             }
-            
         }
     }
 }
