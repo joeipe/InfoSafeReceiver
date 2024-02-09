@@ -19,17 +19,27 @@ namespace InfoSafeReceiver.Application.Jobs
         }
 
         [AutomaticRetry(Attempts = 0)]
-        public override async Task ExecuteAsync()
+        public override async Task ExecuteAsync(IJobCancellationToken cancellationToken)
         {
             var scopeInfo = new Dictionary<string, object>();
-            scopeInfo.Add("Controller", nameof(AddContactJob));
+            scopeInfo.Add("Job", nameof(AddContactJob));
             scopeInfo.Add("Action", nameof(ExecuteAsync));
             using (_logger.BeginScope(scopeInfo))
                 _logger.LogInformation("{ScopeInfo} - {Param}", scopeInfo, DateTime.Now);
 
-            var message = "{\"RefId\":1,\"FirstName\":\"Job\",\"LastName\":\"Cron\",\"DoB\":\"26/04/1981\"}";
-            var value = message.OutputObject<ContactVM>();
-            await _appService.AddContactDelayedAsync(value);
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var message = "{\"RefId\":1,\"FirstName\":\"Job\",\"LastName\":\"Cron\",\"DoB\":\"26/04/1981\"}";
+                var value = message.OutputObject<ContactVM>();
+                await _appService.AddContactDelayedAsync(value);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogError(ex, $"OperationCanceledException Thrown. Error: {ex.Message}");
+            }
+            
         }
     }
 }

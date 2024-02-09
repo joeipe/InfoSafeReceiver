@@ -65,7 +65,7 @@ namespace InfoSafeReceiver.API.Configurations
             {
                 throw new InvalidOperationException("new recurring job must be added to the RecurringJobTypes collection before it can be registered");
             }
-            RecurringJob.AddOrUpdate<T>(type.Name, x => x.ExecuteAsync(), cron);
+            RecurringJob.AddOrUpdate<T>(type.Name, x => x.ExecuteAsync(JobCancellationToken.Null), cron);
         }
     }
 }
