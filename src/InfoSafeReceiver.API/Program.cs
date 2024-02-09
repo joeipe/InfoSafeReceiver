@@ -51,7 +51,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.ApplyHangfire();
-app.RegisterHangfireRecurringJobs();
 
 app.UseHttpsRedirection();
 

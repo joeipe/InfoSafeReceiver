@@ -2,6 +2,7 @@
 using Hangfire.SqlServer;
 using Hangfire.Storage;
 using InfoSafeReceiver.Application.Jobs;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace InfoSafeReceiver.API.Configurations
@@ -28,15 +29,22 @@ namespace InfoSafeReceiver.API.Configurations
                     UseRecommendedIsolationLevel = true,
                     DisableGlobalLocks = true
                 }));
+            GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute { Attempts = 3, DelaysInSeconds = new int[] { 1, 5, 100 } });
             services.AddHangfireServer();
         }
 
         public static void ApplyHangfire(this IApplicationBuilder app)
         {
-            app.UseHangfireDashboard();
+            var options = new DashboardOptions
+            {
+                AppPath = "/swagger"
+            };
+            app.UseHangfireDashboard("/hangfire", options);
+
+            RegisterHangfireRecurringJobs();
         }
 
-        public static void RegisterHangfireRecurringJobs(this IApplicationBuilder app)
+        private static void RegisterHangfireRecurringJobs()
         {
             var jobIds = RecurringJobTypes.Select(x => x.Name).ToHashSet();
             using (var connection = JobStorage.Current.GetConnection())
@@ -52,7 +60,12 @@ namespace InfoSafeReceiver.API.Configurations
 
         private static void RegisterRecurringJob<T>(string cron) where T : JobBase
         {
-            RecurringJob.AddOrUpdate<T>(x => x.ExecuteAsync(), cron);
+            var type = RecurringJobTypes.SingleOrDefault(x => x == typeof(T));
+            if (type == null)
+            {
+                throw new InvalidOperationException("new recurring job must be added to the RecurringJobTypes collection before it can be registered");
+            }
+            RecurringJob.AddOrUpdate<T>(type.Name, x => x.ExecuteAsync(), cron);
         }
     }
 }
