@@ -11,13 +11,16 @@ namespace InfoSafeReceiver.API.Controllers
     {
         private readonly ILogger<ContactReceiverController> _logger;
         private readonly IAppService _appService;
+        private readonly IBackgroundJobClient _backgroundJobClient;
 
         public ContactReceiverController(
             ILogger<ContactReceiverController> logger,
-            IAppService appService)
+            IAppService appService,
+            IBackgroundJobClient backgroundJobClient)
         {
             _logger = logger;
             _appService = appService;
+            _backgroundJobClient = backgroundJobClient;
         }
 
         [HttpGet]
@@ -49,8 +52,10 @@ namespace InfoSafeReceiver.API.Controllers
         [HttpPost]
         public ActionResult AddContactDelayed([FromBody] ContactVM value)
         {
+            var jobId = _backgroundJobClient.Enqueue<IAppService>(x => x.AddContactDelayedAsync(value));
+
             // Fire-and-forget
-            var jobId = BackgroundJob.Enqueue<IAppService>(x => x.AddContactDelayedAsync(value));
+            //var jobId = BackgroundJob.Enqueue<IAppService>(x => x.AddContactDelayedAsync(value));
 
             //Delayed
             //jobId = BackgroundJob.Schedule<IAppService>(x => x.AddContactDelayedAsync(value), TimeSpan.FromMinutes(5));
