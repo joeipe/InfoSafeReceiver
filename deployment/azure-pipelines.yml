@@ -92,7 +92,7 @@ stages:
         inputs:
           azureSubscription: 'Personal-Sub(57f4859b-8037-4106-ac17-61520b9de19b)'
           appType: 'webApp'
-          appName: 'InfoSafeReceiverApi'
+          appName: 'InfoSafeReceiverJIAPI'
           package: '$(System.DefaultWorkingDirectory)/**/*.zip'
           appSettings: '-ASPNETCORE_ENVIRONMENT "Production"'
           deploymentMethod: 'auto'
