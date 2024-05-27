@@ -90,33 +90,33 @@ stages:
       
       - task: AzureWebApp@1
         inputs:
-          azureSubscription: 'AzureSC'
+          azureSubscription: 'Personal-Sub(57f4859b-8037-4106-ac17-61520b9de19b)'
           appType: 'webApp'
           appName: 'InfoSafeReceiverApi'
           package: '$(System.DefaultWorkingDirectory)/**/*.zip'
           appSettings: '-ASPNETCORE_ENVIRONMENT "Production"'
           deploymentMethod: 'auto'
       
-      - task: AzureCLI@2
-        inputs:
-          azureSubscription: 'AzureSC'
-          scriptType: 'pscore'
-          scriptLocation: 'inlineScript'
-          inlineScript: |
-            # API Management service-specific details
-            $APIMServiceName="InfoSafeApim"
-            $ResourceGroupName="infosafe-rg"
-            $DisplayName="InfoSafeReceiver API"
-            $ServiceURL="https://infosafereceiverapi.azurewebsites.net"
+      # - task: AzureCLI@2
+      #   inputs:
+      #     azureSubscription: 'Personal-Sub(57f4859b-8037-4106-ac17-61520b9de19b)'
+      #     scriptType: 'pscore'
+      #     scriptLocation: 'inlineScript'
+      #     inlineScript: |
+      #       # API Management service-specific details
+      #       $APIMServiceName="InfoSafeApim"
+      #       $ResourceGroupName="infosafe-rg"
+      #       $DisplayName="InfoSafeReceiver API"
+      #       $ServiceURL="https://infosafereceiverapi.azurewebsites.net"
             
-            # API-specific details
-            $APIId="InfoSafeReceiverApi"
-            $APIPath="infosafereceiver"
-            $SpecificationFormat="OpenAPI"
-            $SpecificationURL="https://infosafereceiverapi.azurewebsites.net/swagger/v1/swagger.json"
+      #       # API-specific details
+      #       $APIId="InfoSafeReceiverApi"
+      #       $APIPath="infosafereceiver"
+      #       $SpecificationFormat="OpenAPI"
+      #       $SpecificationURL="https://infosafereceiverapi.azurewebsites.net/swagger/v1/swagger.json"
             
-            # Import API
-            az apim api import --path $APIPath --resource-group $ResourceGroupName `
-                --service-name $APIMServiceName --api-id $APIId `
-                --display-name $DisplayName --service-url $ServiceURL `
-                --specification-format $SpecificationFormat --specification-url $SpecificationURL
+      #       # Import API
+      #       az apim api import --path $APIPath --resource-group $ResourceGroupName `
+      #           --service-name $APIMServiceName --api-id $APIId `
+      #           --display-name $DisplayName --service-url $ServiceURL `
+      #           --specification-format $SpecificationFormat --specification-url $SpecificationURL
